@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>🛒 סל חכם - השוואת מחירים</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green:#00c853;--green-dark:#009624;--green-light:#b9f6ca;
+  --blue:#1565c0;--blue-light:#e3f2fd;
+  --orange:#ff6d00;--red:#d32f2f;
+  --g50:#fafafa;--g100:#f5f5f5;--g200:#eeeeee;--g300:#e0e0e0;
+  --g500:#9e9e9e;--g700:#616161;--g900:#212121;--white:#ffffff;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.12);--shadow-md:0 4px 12px rgba(0,0,0,.10);
+  --shadow-lg:0 8px 32px rgba(0,0,0,.14);
+  --r:16px;--rs:8px;--rf:9999px;
+}
+html{font-size:16px}
+body{font-family:'Heebo',sans-serif;background:var(--g100);color:var(--g900);min-height:100vh;-webkit-font-smoothing:antialiased}
+#app{max-width:480px;margin:0 auto;min-height:100vh;background:var(--white);position:relative}
+
+/* Header */
+.header{background:linear-gradient(135deg,#00c853 0%,#1565c0 100%);padding:16px 16px 14px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.header-top{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.header-logo{font-size:26px}
+.header-title{color:white;font-weight:800;font-size:19px;line-height:1.2}
+.header-subtitle{color:rgba(255,255,255,.8);font-size:11px}
+.status-dot{width:7px;height:7px;border-radius:50%;background:#69f0ae;display:inline-block;margin-left:5px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Search */
+.search-row{display:flex;gap:8px;align-items:center}
+.search-wrap{flex:1;position:relative}
+.search-input{width:100%;padding:11px 38px 11px 12px;border-radius:var(--rf);border:none;background:rgba(255,255,255,.95);font-family:'Heebo',sans-serif;font-size:14px;color:var(--g900);outline:none}
+.search-icon{position:absolute;right:11px;top:50%;transform:translateY(-50%);font-size:17px;pointer-events:none;color:var(--g500)}
+.cam-btn{background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);color:white;border-radius:50%;width:42px;height:42px;font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* Autocomplete */
+.ac-wrap{position:relative}
+.ac-drop{position:absolute;top:calc(100% + 5px);left:0;right:0;background:white;border-radius:var(--r);box-shadow:var(--shadow-lg);z-index:300;overflow:hidden;border:1.5px solid var(--g200);max-height:400px;overflow-y:auto}
+.ac-head{padding:7px 14px;font-size:11px;font-weight:700;color:var(--g500);background:var(--g50);border-bottom:1px solid var(--g100)}
+.ac-item{display:flex;align-items:center;padding:9px 12px;gap:10px;cursor:pointer;transition:background .1s;border-bottom:1px solid var(--g100)}
+.ac-item:last-child{border-bottom:none}
+.ac-item:hover,.ac-item.hl{background:var(--g50)}
+.ac-item.hl{background:#e8f5e9}
+.ac-img{width:42px;height:42px;border-radius:8px;background:var(--g100);flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:22px}
+.ac-img img{width:100%;height:100%;object-fit:contain}
+.ac-info{flex:1;min-width:0}
+.ac-name{font-size:13px;font-weight:600;color:var(--g900);line-height:1.3}
+.ac-name mark{background:#fff176;color:var(--g900);border-radius:2px;padding:0 1px;font-weight:800;font-style:normal}
+.ac-meta{display:flex;gap:5px;margin-top:3px;flex-wrap:wrap;align-items:center}
+.ac-cat{font-size:11px;color:var(--g500)}
+.pr{font-size:11px;font-weight:700;padding:1px 7px;border-radius:10px}
+.pr-r{background:#e8f5e9;color:#2e7d32}
+.pr-o{background:#e3f2fd;color:#1565c0}
+.pr-only{background:#fff3e0;color:#e65100;font-size:10px}
+.ac-add{background:var(--green);color:white;border:none;border-radius:var(--rf);width:30px;height:30px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700}
+.ac-add:hover{background:var(--green-dark)}
+
+/* Region */
+.region-bar{padding:10px 16px;background:white;border-bottom:1px solid var(--g100);display:flex;align-items:center;gap:8px}
+.region-select{flex:1;background:var(--blue-light);border:1.5px solid var(--blue);border-radius:var(--rf);padding:6px 12px;font-family:'Heebo',sans-serif;font-size:13px;font-weight:600;color:var(--blue);outline:none;cursor:pointer}
+
+/* Tabs */
+.tabs{display:flex;background:var(--white);border-bottom:2px solid var(--g200);position:sticky;top:120px;z-index:90}
+.tab{flex:1;padding:11px 8px;text-align:center;background:none;border:none;font-family:'Heebo',sans-serif;font-size:12px;font-weight:600;color:var(--g500);cursor:pointer;position:relative;transition:color .2s}
+.tab.active{color:var(--green-dark)}
+.tab.active::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:2px;background:var(--green-dark)}
+.tab-icon{font-size:16px;display:block;margin-bottom:2px}
+
+/* Content */
+.content{padding:14px;padding-bottom:90px}
+
+/* Product card */
+.product-card{display:flex;align-items:center;padding:11px 14px;gap:12px;border-bottom:1px solid var(--g100);cursor:pointer;transition:background .12s}
+.product-card:hover{background:var(--g50)}
+.product-card:last-child{border-bottom:none}
+.pc-img{width:48px;height:48px;border-radius:10px;background:var(--g100);flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:26px}
+.pc-img img{width:100%;height:100%;object-fit:contain}
+.pc-info{flex:1;min-width:0}
+.pc-name{font-size:13px;font-weight:600;color:var(--g900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-meta{display:flex;gap:5px;margin-top:3px;flex-wrap:wrap}
+.add-btn{background:var(--green);color:white;border:none;border-radius:var(--rf);width:32px;height:32px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;transition:background .15s}
+.add-btn:hover{background:var(--green-dark)}
+
+/* Cart */
+.cart-item{background:var(--white);border-radius:var(--r);box-shadow:var(--shadow-sm);padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:11px;border:1.5px solid var(--g200);position:relative}
+.cart-item.only-one{border-color:var(--orange)}
+.only-badge{position:absolute;top:-9px;right:12px;background:var(--orange);color:white;font-size:10px;font-weight:700;padding:2px 10px;border-radius:var(--rf)}
+.ci-img{width:50px;height:50px;border-radius:10px;background:var(--g100);flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:26px}
+.ci-img img{width:100%;height:100%;object-fit:contain}
+.ci-info{flex:1;min-width:0}
+.ci-name{font-size:13px;font-weight:600;color:var(--g900);margin-bottom:5px}
+.ci-prices{display:flex;gap:8px;flex-wrap:wrap}
+.price-tag{font-size:12px;font-weight:700;padding:3px 9px;border-radius:var(--rf)}
+.pt-r{background:#e8f5e9;color:#2e7d32}
+.pt-o{background:#e3f2fd;color:#1565c0}
+.pt-na{background:var(--g200);color:var(--g500)}
+.qty-row{display:flex;align-items:center;gap:6px;margin-top:6px}
+.qty-btn{background:var(--g200);border:none;border-radius:50%;width:24px;height:24px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--g700)}
+.qty-btn:hover{background:var(--g300)}
+.qty-n{font-size:14px;font-weight:700;min-width:20px;text-align:center}
+.rm-btn{background:none;border:none;cursor:pointer;font-size:18px;color:var(--g400);padding:4px;flex-shrink:0}
+.rm-btn:hover{color:var(--red)}
+
+/* Summary */
+.summary-card{background:linear-gradient(135deg,#e8f5e9 0%,#e3f2fd 100%);border-radius:var(--r);padding:18px;margin-bottom:14px;box-shadow:var(--shadow-md)}
+.sum-title{font-size:15px;font-weight:800;color:var(--g900);margin-bottom:14px}
+.sum-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.sum-store{display:flex;align-items:center;gap:9px}
+.store-icon{font-size:22px}
+.store-name{font-weight:700;font-size:14px}
+.store-sub{font-size:11px;color:var(--g500)}
+.total-price{font-size:22px;font-weight:900}
+.tr{color:#2e7d32}.to{color:#1565c0}
+.winner-banner{background:var(--green);color:white;border-radius:var(--rs);padding:10px 14px;text-align:center;font-weight:700;font-size:13px;margin-top:10px}
+.savings{font-size:11px;margin-top:2px;opacity:.9}
+.divider{height:1px;background:rgba(0,0,0,.08);margin:10px 0}
+
+/* AI suggestion */
+.ai-sug{background:linear-gradient(135deg,#fff3e0,#ffe0b2);border:1.5px solid var(--orange);border-radius:var(--r);padding:12px 14px;margin-bottom:10px}
+.ai-head{display:flex;align-items:center;gap:7px;margin-bottom:7px}
+.ai-title{font-size:12px;font-weight:700;color:var(--orange)}
+.ai-dismiss{background:none;border:none;font-size:17px;cursor:pointer;color:var(--g400);margin-right:auto}
+.ai-text{font-size:12px;color:var(--g700);line-height:1.5;margin-bottom:9px}
+.ai-btn{background:var(--orange);color:white;border:none;border-radius:var(--rf);padding:7px 18px;font-family:'Heebo',sans-serif;font-size:12px;font-weight:700;cursor:pointer}
+
+/* Toast */
+.toast-wrap{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:9999;pointer-events:none;width:92%;max-width:400px}
+.toast{background:var(--g900);color:white;padding:11px 16px;border-radius:var(--r);margin-bottom:8px;font-size:13px;font-weight:500;box-shadow:var(--shadow-lg);animation:tin .3s ease,tout .3s ease 2.7s forwards;display:flex;align-items:flex-start;gap:9px;line-height:1.4}
+.toast.warn{background:var(--orange)}.toast.ok{background:var(--green-dark)}
+.toast-icon{font-size:17px;flex-shrink:0;margin-top:1px}
+@keyframes tin{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes tout{from{opacity:1}to{opacity:0}}
+
+/* Scanner */
+.scanner-overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:2000;display:flex;flex-direction:column;align-items:center;justify-content:center;color:white}
+.scanner-frame{width:260px;height:160px;border:3px solid var(--green);border-radius:14px;position:relative;margin-bottom:20px}
+.scanner-line{position:absolute;top:0;left:0;right:0;height:2px;background:var(--green);animation:scan 2s ease-in-out infinite;box-shadow:0 0 8px var(--green)}
+@keyframes scan{0%,100%{top:0}50%{top:calc(100% - 2px)}}
+.scanner-close{position:absolute;top:18px;left:18px;background:rgba(255,255,255,.15);border:none;color:white;border-radius:50%;width:38px;height:38px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.scanner-manual{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);padding:14px 18px 24px;border-radius:18px 18px 0 0}
+.scanner-input-row{display:flex;gap:8px}
+.scanner-input{flex:1;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);border-radius:var(--rf);padding:11px 14px;color:white;font-family:'Heebo',sans-serif;font-size:15px;outline:none;text-align:center;letter-spacing:2px}
+.scanner-input::placeholder{color:rgba(255,255,255,.4);letter-spacing:0}
+.scanner-go{background:var(--green);color:white;border:none;border-radius:var(--rf);padding:11px 18px;font-family:'Heebo',sans-serif;font-size:14px;font-weight:700;cursor:pointer}
+
+/* Cat chips */
+.cat-scroll{display:flex;gap:7px;overflow-x:auto;padding-bottom:8px;margin-bottom:14px;scrollbar-width:none}
+.cat-scroll::-webkit-scrollbar{display:none}
+.cat-chip{white-space:nowrap;background:var(--g100);border:1.5px solid var(--g200);border-radius:var(--rf);padding:5px 13px;font-family:'Heebo',sans-serif;font-size:12px;font-weight:600;color:var(--g700);cursor:pointer;transition:all .15s}
+.cat-chip.active{background:var(--green);border-color:var(--green);color:white}
+
+/* States */
+.empty-state{text-align:center;padding:48px 20px}
+.empty-emoji{font-size:60px;margin-bottom:14px}
+.empty-title{font-size:17px;font-weight:700;color:var(--g700);margin-bottom:7px}
+.empty-text{font-size:13px;color:var(--g500);line-height:1.5}
+.spinner{display:inline-block;width:28px;height:28px;border:3px solid var(--g200);border-top-color:var(--green);border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.loading-center{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;gap:12px;color:var(--g500);font-size:13px}
+.results-wrap{background:white;border-radius:var(--r);box-shadow:var(--shadow-sm);overflow:hidden}
+.tip-bar{text-align:center;font-size:11px;color:var(--g500);padding:6px 14px 10px;line-height:1.5}
+</style>
+</head>
+<body>
+<div id="app"><div id="root"></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
+
+<script type="text/babel">
+const {useState,useEffect,useRef,useCallback,useMemo}=React;
+
+// ── API base URL ──────────────────────────────────────────────
+const API = window.location.hostname === 'localhost'
+  ? 'http://localhost:3001/api'
+  : '/api'; // same origin in production
+
+// ── Regions ──────────────────────────────────────────────────
+const REGIONS=[
+  {id:'tel-aviv',name:'תל אביב והמרכז'},
+  {id:'jerusalem',name:'ירושלים'},
+  {id:'haifa',name:'חיפה והצפון'},
+  {id:'beer-sheva',name:'באר שבע והדרום'},
+  {id:'rishon',name:'ראשון לציון'},
+  {id:'petah-tikva',name:'פתח תקווה'},
+  {id:'netanya',name:'נתניה והשרון'},
+  {id:'ashdod',name:'אשדוד והשפלה'},
+  {id:'rehovot',name:'רחובות'},
+  {id:'holon',name:'חולון ובת ים'},
+];
+
+// ── Similar products for AI suggestion (can be extended) ─────
+const SIMILAR={};
+
+// ── Helpers ──────────────────────────────────────────────────
+function highlight(name,query){
+  if(!query||query.trim().length<2)return name;
+  const terms=query.toLowerCase().trim().split(/\s+/).filter(t=>t.length>1);
+  let result=name;
+  for(const t of terms){
+    const esc=t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    result=result.replace(new RegExp(esc,'gi'),m=>`§§§${m}§§§`);
+  }
+  return result.split('§§§').map((p,i)=>
+    i%2===1?React.createElement('mark',{key:i},p):p
+  );
+}
+
+function avail(p){
+  if(p.availability)return p.availability;
+  const r=p.prices?.ramiLevy!=null,o=p.prices?.osherAd!=null;
+  if(r&&o)return'both';if(r)return'ramiOnly';if(o)return'osherOnly';return'none';
+}
+
+// ── ProductImg ───────────────────────────────────────────────
+function ProductImg({src,size=48,style={}}){
+  const [err,setErr]=useState(false);
+  if(src&&!err)return(
+    <img src={src} alt="" style={{width:'100%',height:'100%',objectFit:'contain',...style}}
+      onError={()=>setErr(true)}/>
+  );
+  return<span style={{fontSize:size*.5}}>🛍️</span>;
+}
+
+// ── Toast ────────────────────────────────────────────────────
+function Toasts({list}){
+  return(
+    <div className="toast-wrap">
+      {list.map(t=>(
+        <div key={t.id} className={`toast ${t.type}`}>
+          <span className="toast-icon">{t.icon}</span><span>{t.msg}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Scanner ──────────────────────────────────────────────────
+function Scanner({onScan,onClose}){
+  const[manual,setManual]=useState('');
+  const[status,setStatus]=useState('init');
+  const[cameras,setCameras]=useState([]);
+  const[camId,setCamId]=useState(null);
+  const[errMsg,setErrMsg]=useState('');
+  const videoRef=useRef();const readerRef=useRef();const scanned=useRef(false);
+
+  useEffect(()=>{
+    if(typeof ZXing==='undefined'){setStatus('error');setErrMsg('ספריית הסריקה לא נטענה');return;}
+    const reader=new ZXing.BrowserMultiFormatReader();readerRef.current=reader;
+    reader.listVideoInputDevices().then(devs=>{
+      if(!devs||!devs.length){setStatus('error');setErrMsg('לא נמצאה מצלמה');return;}
+      setCameras(devs);
+      const back=devs.find(d=>/(back|rear|environment)/i.test(d.label))||devs[devs.length-1];
+      setCamId(back.deviceId);start(reader,back.deviceId);
+    }).catch(e=>{setStatus('error');setErrMsg('אין גישה למצלמה: '+e.message);});
+    return()=>{try{readerRef.current?.reset();}catch{}};
+  },[]);
+
+  const start=(r,id)=>{
+    setStatus('scanning');scanned.current=false;
+    r.decodeFromVideoDevice(id,videoRef.current,(res)=>{
+      if(res&&!scanned.current){
+        scanned.current=true;
+        if(navigator.vibrate)navigator.vibrate(100);
+        try{r.reset();}catch{}
+        onScan(res.getText());
+      }
+    });
+  };
+
+  const switchCam=()=>{
+    if(cameras.length<2)return;
+    const idx=cameras.findIndex(c=>c.deviceId===camId);
+    const next=cameras[(idx+1)%cameras.length];
+    setCamId(next.deviceId);
+    try{readerRef.current?.reset();}catch{}
+    const r=new ZXing.BrowserMultiFormatReader();readerRef.current=r;start(r,next.deviceId);
+  };
+
+  const submit=()=>{if(manual.trim()){try{readerRef.current?.reset();}catch{}onScan(manual.trim());}};
+
+  return(
+    <div className="scanner-overlay">
+      <button className="scanner-close" onClick={onClose}>✕</button>
+      {status==='scanning'&&(
+        <>
+          <video ref={videoRef} style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',opacity:.85}} autoPlay playsInline muted/>
+          <div style={{position:'relative',zIndex:2,display:'flex',flexDirection:'column',alignItems:'center',width:'100%',marginTop:80}}>
+            <div className="scanner-frame"><div className="scanner-line"/></div>
+            <p style={{fontWeight:600,marginTop:14,fontSize:15}}>כוון ברקוד למסגרת</p>
+            <p style={{fontSize:12,opacity:.7,marginBottom:10}}>הסריקה תתבצע אוטומטית</p>
+            {cameras.length>1&&<button onClick={switchCam} style={{background:'rgba(255,255,255,.2)',border:'1px solid rgba(255,255,255,.4)',color:'white',borderRadius:20,padding:'7px 14px',fontSize:12,cursor:'pointer'}}>🔄 החלף מצלמה</button>}
+          </div>
+        </>
+      )}
+      {status==='init'&&<div className="loading-center"><div className="spinner" style={{borderTopColor:'white'}}/><span>מתחבר למצלמה...</span></div>}
+      {status==='error'&&<div style={{textAlign:'center',padding:24}}><div style={{fontSize:44,marginBottom:10}}>📵</div><p style={{fontWeight:700,marginBottom:6}}>{errMsg}</p></div>}
+      <div className="scanner-manual">
+        <p style={{color:'rgba(255,255,255,.6)',fontSize:11,textAlign:'center',marginBottom:9}}>הזן ברקוד ידנית</p>
+        <div className="scanner-input-row">
+          <input className="scanner-input" type="number" placeholder="729000..." value={manual} onChange={e=>setManual(e.target.value)} onKeyDown={e=>e.key==='Enter'&&submit()}/>
+          <button className="scanner-go" onClick={submit}>חפש</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Status Bar ───────────────────────────────────────────────
+function StatusBar(){
+  const[status,setStatus]=useState(null);
+  useEffect(()=>{
+    fetch(`${API}/status`).then(r=>r.json()).then(d=>{if(d.ok)setStatus(d);}).catch(()=>{});
+  },[]);
+  if(!status)return null;
+  const d=new Date(status.lastUpdate);
+  const ago=Math.round((Date.now()-d.getTime())/60000);
+  return(
+    <div style={{background:'#e8f5e9',padding:'5px 14px',fontSize:11,color:'#2e7d32',borderBottom:'1px solid #c8e6c9',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+      <span><span className="status-dot"/>עדכון אחרון: {ago<60?`לפני ${ago} דק'`:d.toLocaleDateString('he')}</span>
+      <span>{status.productCount?.toLocaleString()} מוצרים</span>
+    </div>
+  );
+}
+
+// ── SearchBar with autocomplete ──────────────────────────────
+function SearchBar({onAdd,region}){
+  const[q,setQ]=useState('');
+  const[open,setOpen]=useState(false);
+  const[results,setResults]=useState([]);
+  const[hl,setHl]=useState(-1);
+  const[loading,setLoading]=useState(false);
+  const[showScan,setShowScan]=useState(false);
+  const wrapRef=useRef();const inputRef=useRef();const debRef=useRef();
+
+  useEffect(()=>{
+    clearTimeout(debRef.current);
+    if(!q.trim()){setResults([]);setOpen(false);return;}
+    setLoading(true);
+    debRef.current=setTimeout(async()=>{
+      try{
+        const r=await fetch(`${API}/products?q=${encodeURIComponent(q)}&limit=8`);
+        const d=await r.json();
+        setResults(d.results||[]);
+        setOpen((d.results||[]).length>0);
+        setHl(-1);
+      }catch{}finally{setLoading(false);}
+    },200);
+    return()=>clearTimeout(debRef.current);
+  },[q]);
+
+  useEffect(()=>{
+    const h=e=>{if(wrapRef.current&&!wrapRef.current.contains(e.target))setOpen(false);};
+    document.addEventListener('mousedown',h);return()=>document.removeEventListener('mousedown',h);
+  },[]);
+
+  const select=p=>{onAdd(p);setQ('');setOpen(false);setHl(-1);inputRef.current?.focus();};
+
+  const kd=e=>{
+    if(!open)return;
+    if(e.key==='ArrowDown'){e.preventDefault();setHl(h=>Math.min(h+1,results.length-1));}
+    else if(e.key==='ArrowUp'){e.preventDefault();setHl(h=>Math.max(h-1,-1));}
+    else if(e.key==='Enter'&&hl>=0){e.preventDefault();select(results[hl]);}
+    else if(e.key==='Escape'){setOpen(false);}
+  };
+
+  const scan=barcode=>{
+    fetch(`${API}/product/${barcode}`).then(r=>r.json()).then(d=>{
+      if(d.ok)onAdd(d.product);else alert('מוצר לא נמצא: '+barcode);
+      setShowScan(false);
+    }).catch(()=>{alert('שגיאה בחיפוש ברקוד');setShowScan(false);});
+  };
+
+  return(
+    <>
+      {showScan&&<Scanner onScan={scan} onClose={()=>setShowScan(false)}/>}
+      <div className="search-row">
+        <div className="ac-wrap" ref={wrapRef} style={{flex:1}}>
+          <div className="search-wrap">
+            <span className="search-icon">{loading?<span className="spinner" style={{width:16,height:16,borderWidth:2}}/>:'🔍'}</span>
+            <input ref={inputRef} className="search-input" type="text"
+              placeholder="חפש מוצר... עברית / English"
+              value={q} onChange={e=>setQ(e.target.value)}
+              onFocus={()=>results.length>0&&setOpen(true)}
+              onKeyDown={kd}
+            />
+          </div>
+          {open&&(
+            <div className="ac-drop">
+              <div className="ac-head">{results.length} תוצאות עבור "{q}"</div>
+              {results.map((p,i)=>{
+                const av=avail(p);
+                const rp=p.prices?.ramiLevy;const op=p.prices?.osherAd;
+                return(
+                  <div key={p.barcode} className={`ac-item ${hl===i?'hl':''}`}
+                    onMouseEnter={()=>setHl(i)} onMouseLeave={()=>setHl(-1)}
+                    onClick={()=>select(p)}>
+                    <div className="ac-img">
+                      {p.image?<img src={p.image} alt="" style={{width:'100%',height:'100%',objectFit:'contain'}} onError={e=>e.target.style.display='none'}/>:<span style={{fontSize:22}}>🛍️</span>}
+                    </div>
+                    <div className="ac-info">
+                      <div className="ac-name">{highlight(p.name,q)}</div>
+                      <div className="ac-meta">
+                        <span className="ac-cat">{p.category}</span>
+                        {rp&&<span className="pr pr-r">רמי ₪{rp}</span>}
+                        {op&&<span className="pr pr-o">אושר ₪{op}</span>}
+                        {av!=='both'&&<span className="pr pr-only">⚠️ סופר אחד</span>}
+                      </div>
+                    </div>
+                    <button className="ac-add" onClick={e=>{e.stopPropagation();select(p);}}>+</button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        <button className="cam-btn" onClick={()=>setShowScan(true)} title="סרוק ברקוד">📷</button>
+      </div>
+    </>
+  );
+}
+
+// ── Category filter ──────────────────────────────────────────
+function CategoryBar({active,onChange}){
+  const[cats,setCats]=useState(['הכל']);
+  useEffect(()=>{
+    fetch(`${API}/categories`).then(r=>r.json()).then(d=>{
+      if(d.ok)setCats(['הכל',...d.categories]);
+    }).catch(()=>{});
+  },[]);
+  return(
+    <div className="cat-scroll">
+      {cats.map(c=>(
+        <button key={c} className={`cat-chip ${active===c?'active':''}`} onClick={()=>onChange(c)}>{c}</button>
+      ))}
+    </div>
+  );
+}
+
+// ── Product list ─────────────────────────────────────────────
+function ProductList({region,onAdd}){
+  const[cat,setCat]=useState('הכל');
+  const[products,setProducts]=useState([]);
+  const[loading,setLoading]=useState(true);
+
+  useEffect(()=>{
+    setLoading(true);
+    const params=cat!=='הכל'?`?category=${encodeURIComponent(cat)}&limit=50`:'?limit=50';
+    fetch(`${API}/products${params}`).then(r=>r.json()).then(d=>{
+      setProducts(d.results||[]);setLoading(false);
+    }).catch(()=>setLoading(false));
+  },[cat]);
+
+  return(
+    <div className="content">
+      <div className="tip-bar">💡 חפש בשורה למעלה — עברית או אנגלית</div>
+      <CategoryBar active={cat} onChange={setCat}/>
+      {loading?(
+        <div className="loading-center"><div className="spinner"/><span>טוען מוצרים...</span></div>
+      ):(
+        <div className="results-wrap">
+          {products.map(p=>{
+            const av=avail(p);const rp=p.prices?.ramiLevy;const op=p.prices?.osherAd;
+            return(
+              <div key={p.barcode} className="product-card">
+                <div className="pc-img">
+                  {p.image?<img src={p.image} alt="" style={{width:'100%',height:'100%',objectFit:'contain'}} onError={e=>e.target.style.display='none'}/>:<span style={{fontSize:24}}>🛍️</span>}
+                </div>
+                <div className="pc-info">
+                  <div className="pc-name">{p.name}</div>
+                  <div className="pc-meta">
+                    {rp&&<span className="pr pr-r">רמי ₪{rp}</span>}
+                    {op&&<span className="pr pr-o">אושר ₪{op}</span>}
+                    {av!=='both'&&<span className="pr pr-only">⚠️ סופר אחד</span>}
+                  </div>
+                </div>
+                <button className="add-btn" onClick={()=>onAdd(p)}>+</button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Cart ─────────────────────────────────────────────────────
+function Cart({cart,region,onRemove,onQty,onDismissSug,onAcceptSug}){
+  const[comparison,setComparison]=useState(null);
+
+  useEffect(()=>{
+    if(!cart.length){setComparison(null);return;}
+    const barcodes=cart.map(i=>i.barcode).join(',');
+    fetch(`${API}/cart/compare?barcodes=${barcodes}&region=${region}`)
+      .then(r=>r.json()).then(d=>{if(d.ok)setComparison(d.comparison);}).catch(()=>{});
+  },[cart,region]);
+
+  if(!cart.length)return(
+    <div className="content">
+      <div className="empty-state">
+        <div className="empty-emoji">🛒</div>
+        <div className="empty-title">הסל ריק</div>
+        <div className="empty-text">חפש מוצרים בלשונית "חיפוש" והוסף לסל</div>
+      </div>
+    </div>
+  );
+
+  const tot=comparison?.totals;
+  const winner=comparison?.winner;
+
+  return(
+    <div className="content">
+      {comparison&&(
+        <div className="summary-card">
+          <div className="sum-title">📊 השוואת מחירים</div>
+          <div className="sum-row">
+            <div className="sum-store"><span className="store-icon">🟢</span><div><div className="store-name">רמי לוי</div><div className="store-sub">{cart.filter(i=>i.prices?.ramiLevy).length}/{cart.length} מוצרים</div></div></div>
+            <div className={`total-price tr`}>₪{tot?.ramiLevy?.toFixed(2)}{winner==='ramiLevy'&&' 🏆'}</div>
+          </div>
+          <div className="divider"/>
+          <div className="sum-row">
+            <div className="sum-store"><span className="store-icon">🔵</span><div><div className="store-name">אושר עד</div><div className="store-sub">{cart.filter(i=>i.prices?.osherAd).length}/{cart.length} מוצרים</div></div></div>
+            <div className={`total-price to`}>₪{tot?.osherAd?.toFixed(2)}{winner==='osherAd'&&' 🏆'}</div>
+          </div>
+          {tot?.ramiLevy>0&&tot?.osherAd>0&&(
+            <div className="winner-banner">
+              {winner==='ramiLevy'?'🟢 רמי לוי זול יותר':'🔵 אושר עד זול יותר'}
+              <div className="savings">חיסכון של ₪{comparison.saving} לעומת הסופר היקר יותר</div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {cart.map(item=>{
+        const av=avail(item);
+        const isOne=av!=='both';
+        const hasSug=isOne&&SIMILAR[item.barcode]&&!item.sugDismissed;
+        const rp=comparison?.items?.find(i=>i.barcode===item.barcode)?.ramiPrice;
+        const op=comparison?.items?.find(i=>i.barcode===item.barcode)?.osherPrice;
+        return(
+          <div key={item.barcode}>
+            <div className={`cart-item ${isOne?'only-one':''}`}>
+              {isOne&&<span className="only-badge">⚠️ סופר אחד בלבד</span>}
+              <div className="ci-img">
+                {item.image?<img src={item.image} alt="" style={{width:'100%',height:'100%',objectFit:'contain'}} onError={e=>e.target.style.display='none'}/>:<span style={{fontSize:24}}>🛍️</span>}
+              </div>
+              <div className="ci-info">
+                <div className="ci-name">{item.name}</div>
+                <div className="ci-prices">
+                  {rp?<span className="price-tag pt-r">רמי ₪{(rp*item.qty).toFixed(2)}</span>:<span className="price-tag pt-na">רמי —</span>}
+                  {op?<span className="price-tag pt-o">אושר ₪{(op*item.qty).toFixed(2)}</span>:<span className="price-tag pt-na">אושר —</span>}
+                </div>
+                <div className="qty-row">
+                  <button className="qty-btn" onClick={()=>onQty(item.barcode,-1)}>−</button>
+                  <span className="qty-n">{item.qty}</span>
+                  <button className="qty-btn" onClick={()=>onQty(item.barcode,1)}>+</button>
+                </div>
+              </div>
+              <button className="rm-btn" onClick={()=>onRemove(item.barcode)}>🗑</button>
+            </div>
+            {hasSug&&(
+              <div className="ai-sug">
+                <div className="ai-head"><span>🤖</span><span className="ai-title">המלצת AI</span><button className="ai-dismiss" onClick={()=>onDismissSug(item.barcode)}>✕</button></div>
+                <p className="ai-text">מוצר זה נמצא בסופר אחד בלבד. מצאנו אלטרנטיבה דומה!</p>
+                <button className="ai-btn" onClick={()=>onAcceptSug(SIMILAR[item.barcode])}>הצע חלופה</button>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── App ───────────────────────────────────────────────────────
+function App(){
+  const[tab,setTab]=useState('search');
+  const[region,setRegion]=useState('tel-aviv');
+  const[cart,setCart]=useState([]);
+  const[toasts,setToasts]=useState([]);
+  const tid=useRef(0);
+
+  const toast=(msg,type='',icon='ℹ️')=>{
+    const id=++tid.current;
+    setToasts(p=>[...p,{id,msg,type,icon}]);
+    setTimeout(()=>setToasts(p=>p.filter(t=>t.id!==id)),3200);
+  };
+
+  const addToCart=p=>{
+    const av=avail(p);
+    setCart(prev=>{
+      const ex=prev.find(i=>i.barcode===p.barcode);
+      if(ex)return prev.map(i=>i.barcode===p.barcode?{...i,qty:i.qty+1}:i);
+      return[...prev,{...p,qty:1,sugDismissed:false}];
+    });
+    if(av==='ramiOnly')toast(`⚠️ "${p.name}" נמצא רק ברמי לוי`,'warn','⚠️');
+    else if(av==='osherOnly')toast(`⚠️ "${p.name}" נמצא רק באושר עד`,'warn','⚠️');
+    else toast(`${p.name} נוסף לסל`,'ok','✅');
+  };
+
+  const removeFromCart=barcode=>setCart(p=>p.filter(i=>i.barcode!==barcode));
+  const changeQty=(barcode,d)=>setCart(p=>p.map(i=>{
+    if(i.barcode!==barcode)return i;
+    const n=i.qty+d;return n<=0?null:{...i,qty:n};
+  }).filter(Boolean));
+  const dismissSug=barcode=>setCart(p=>p.map(i=>i.barcode===barcode?{...i,sugDismissed:true}:i));
+  const acceptSug=alt=>{if(alt)addToCart(alt);};
+  const cartCount=cart.reduce((s,i)=>s+i.qty,0);
+
+  return(
+    <>
+      <Toasts list={toasts}/>
+      <div id="app">
+        <div className="header">
+          <div className="header-top">
+            <span className="header-logo">🛒</span>
+            <div>
+              <div className="header-title">סל חכם</div>
+              <div className="header-subtitle">השוואת מחירים · רמי לוי · אושר עד</div>
+            </div>
+          </div>
+          {tab==='search'&&<SearchBar onAdd={addToCart} region={region}/>}
+        </div>
+
+        <StatusBar/>
+
+        <div className="region-bar">
+          <span>📍</span>
+          <select className="region-select" value={region} onChange={e=>setRegion(e.target.value)}>
+            {REGIONS.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}
+          </select>
+        </div>
+
+        <div className="tabs">
+          <button className={`tab ${tab==='search'?'active':''}`} onClick={()=>setTab('search')}>
+            <span className="tab-icon">🔍</span>חיפוש
+          </button>
+          <button className={`tab ${tab==='cart'?'active':''}`} onClick={()=>setTab('cart')}>
+            <span className="tab-icon">🛒</span>הסל {cartCount>0&&`(${cartCount})`}
+          </button>
+        </div>
+
+        {tab==='search'
+          ?<ProductList region={region} onAdd={addToCart}/>
+          :<Cart cart={cart} region={region} onRemove={removeFromCart} onQty={changeQty} onDismissSug={dismissSug} onAcceptSug={acceptSug}/>
+        }
+      </div>
+    </>
+  );
+}
+
+ReactDOM.render(<App/>,document.getElementById('root'));
+</script>
+</body>
+</html>
